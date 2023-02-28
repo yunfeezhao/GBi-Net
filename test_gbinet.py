@@ -319,12 +319,38 @@ def test_model_stage_profile(model,
             curr_tree_depth = max_tree_depth
             scan_names = sample["scan_name"]
             img_ids = tensor2numpy(sample["img_id"])
+            scalar_outputs = None
+            reduced_scalar_outputs = None
+            
             for batch_idx in range(len(scan_names)):
                 scan_name = scan_names[batch_idx]
                 img_id = img_ids[batch_idx]
-                test_scalars = {"forward_time": forward_time, "data_time": data_time, "max_mem": forward_max_memory_allocated}
 
+                mask = sample["masks"]["3"][batch_idx:batch_idx+1]
+                depth_est = pred_outs[0][batch_idx:batch_idx+1].cpu()
+                depth_gt = sample["depths"]["3"][batch_idx:batch_idx+1]
+                prob_map = pred_outs[1][batch_idx:batch_idx+1].cpu()
+
+                scalar_outputs = {"abs_depth_error" : AbsDepthError_metrics(depth_est, depth_gt, mask > 0.0)}
+              
+                scalar_outputs["thres2mm_error"] = Thres_metrics(depth_est, depth_gt, mask > 0.0, 2)
+                scalar_outputs["thres4mm_error"] = Thres_metrics(depth_est, depth_gt, mask > 0.0, 4)
+                scalar_outputs["thres8mm_error"] = Thres_metrics(depth_est, depth_gt, mask > 0.0, 8)
+
+                scalar_outputs["thres2mm_accu"] = 1.0 - scalar_outputs["thres2mm_error"]
+                scalar_outputs["thres4mm_accu"] = 1.0 - scalar_outputs["thres4mm_error"]
+                scalar_outputs["thres8mm_accu"] = 1.0 - scalar_outputs["thres8mm_error"]
+                
+                scalar_outputs["front_prob"] = Prob_mean(prob_map, sample["masks"][str(depth2stage[str(max_tree_depth)])][batch_idx:batch_idx + 1] > 0.0)
+                scalar_outputs["back_prob"] = Prob_mean(prob_map, sample["masks"][str(depth2stage[str(max_tree_depth)])][batch_idx:batch_idx + 1] == 0.0)
+
+                scalar_outputs["front_back_diff"] = scalar_outputs["front_prob"] - scalar_outputs["back_prob"]
+
+                scalar_outputs = tensor2float(scalar_outputs)
+                test_scalars = scalar_outputs
+                test_scalars.update({"forward_time": forward_time, "data_time": data_time, "max_mem": forward_max_memory_allocated})
                 avg_test_scalars["depth{}".format(curr_tree_depth)].update(test_scalars)
+
                 test_scalars["scan_name"] = scan_name
                 test_scalars["img_id"] = img_id
                 all_test_scalars_dict["depth{}".format(curr_tree_depth)].append(test_scalars)
@@ -351,6 +377,7 @@ def test_model_stage_profile(model,
             ref_imgs = tensor2numpy(sample["ref_imgs"][str(stage_id)])
 
             for batch_idx in range(len(scan_names)):
+                continue
                 scan_name = scan_names[batch_idx]
                 scan_folder = osp.join(depth_output_dir, scan_name)
 
@@ -375,7 +402,7 @@ def test_model_stage_profile(model,
 
                 ref_image = ref_imgs[batch_idx]
                 out_ref_image_path = osp.join(scan_folder, "{:0>8}.jpg".format(img_id))
-
+                prob_map[sample["masks"]["3"][batch_idx]==0]=0
                 save_pfm(prob_map_path, prob_map)        
                 plt.imsave(pred_prob_img_path, prob_map, vmin=0.0, vmax=1.0, cmap="rainbow")
                 save_pfm(init_depth_map_path, init_depth_map)
@@ -477,7 +504,7 @@ def test(rank, cfg):
             data_loader=test_data_loader,
             max_tree_depth=cfg["max_depth"],
             depth2stage=cfg["model"]["stage_info"]["depth2stage"],
-            depth2sample_num=cfg["model"]["stage_info"].get("depth2sample_num", None),
+            #depth2sample_num=cfg["model"]["stage_info"].get("depth2sample_num", None),
             output_dir=osp.join(cfg["output_dir"], "test_output"),
             is_clean=cfg["data"]["test"]["is_clean"],
             out_depths=cfg["data"]["test"]["out_depths"],
@@ -645,7 +672,7 @@ def xy_filter_per(rank, cfg):
             else:
                 para_tag = para_id
             for scan in scans:
-                paras = cfg["fusion"]["xy_filter_per"][scan]
+                paras = cfg["fusion"]["xy_filter_per"]["scan"]
                 prob_threshold = paras["prob_threshold"][para_tag]
                 point_dir = os.path.join(output_dir, str(para_tag), "depth_{}".format(curr_tree_depth), "xy_filter_per", "collected_points_{}".format(prob_threshold)) \
                     if prob_threshold is not None else os.path.join(output_dir, str(para_tag), "depth_{}".format(curr_tree_depth), "xy_filter_per", "collected_points")
@@ -743,9 +770,10 @@ def main():
             if cfg["fusion"]["xy_filter_per"].get("nprocs", None) is None:
                 xy_filter_per(-1, cfg)
             else:
-                with open(cfg["data"]["test"]["listfile"]) as f:
-                    scans = f.readlines()
-                    scans = [line.rstrip() for line in scans]
+                # with open(cfg["data"]["test"]["listfile"]) as f:
+                #     scans = f.readlines()
+                #     scans = [line.rstrip() for line in scans]
+                scans = ["zrr_0000000042","zrr_0000000504"]
                 cfg["fusion"]["xy_filter_per"]["scans"] = chunk_list(scans, cfg["fusion"]["xy_filter_per"]["nprocs"])
                 mp.spawn(xy_filter_per,
                     args=(cfg,),

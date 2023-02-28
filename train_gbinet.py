@@ -113,6 +113,7 @@ def train_model_stage(model,
             image_outputs["ori_mask"] = sample["masks"][str(stage_id)]
                             
             image_outputs["errormap"] = (depth_est - depth_gt).abs() * mask
+            scalar_outputs["org_abs_depth_error"] = AbsDepthError_metrics(depth_est, depth_gt, sample_cuda["masks"][str(stage_id)] > 0.0)
             scalar_outputs["abs_depth_error"] = AbsDepthError_metrics(depth_est, depth_gt, mask > 0.0)
 
             scalar_outputs["accu"] = GBiNet_accu(pred_label, gt_label, mask > 0.0)
@@ -121,9 +122,9 @@ def train_model_stage(model,
             scalar_outputs["accu2"] = GBiNet_accu(pred_label, gt_label, torch.logical_and(torch.eq(gt_label, 2), mask > 0.0))
             scalar_outputs["accu3"] = GBiNet_accu(pred_label, gt_label, torch.logical_and(torch.eq(gt_label, 3), mask > 0.0))
             
-            scalar_outputs["thres2mm_error"] = Thres_metrics(depth_est, depth_gt, mask > 0.0, 2)
-            scalar_outputs["thres4mm_error"] = Thres_metrics(depth_est, depth_gt, mask > 0.0, 4)
-            scalar_outputs["thres8mm_error"] = Thres_metrics(depth_est, depth_gt, mask > 0.0, 8)
+            scalar_outputs["thres2mm_error"] = Thres_metrics(depth_est, depth_gt, sample_cuda["masks"][str(stage_id)] > 0.0, 2)
+            scalar_outputs["thres4mm_error"] = Thres_metrics(depth_est, depth_gt, sample_cuda["masks"][str(stage_id)] > 0.0, 4)
+            scalar_outputs["thres8mm_error"] = Thres_metrics(depth_est, depth_gt, sample_cuda["masks"][str(stage_id)] > 0.0, 8)
             
             scalar_outputs["thres2mm_accu"] = 1.0 - scalar_outputs["thres2mm_error"]
             scalar_outputs["thres4mm_accu"] = 1.0 - scalar_outputs["thres4mm_error"]
@@ -162,6 +163,7 @@ def train_model_stage(model,
                             "accu2 {:.4f}".format(scalar_outputs["accu2"]),
                             "accu3 {:.4f}".format(scalar_outputs["accu3"]),
 
+                            "org_aabs_depth_error {:.4f}".format(scalar_outputs["org_abs_depth_error"]),
                             "abs_depth_error {:.4f}".format(scalar_outputs["abs_depth_error"]),
                             "thres2mm_error {:.4f}".format(scalar_outputs["thres2mm_error"]),
                             "thres4mm_error {:.4f}".format(scalar_outputs["thres4mm_error"]),
@@ -186,6 +188,15 @@ def train_model_stage(model,
         if scheduler is not None:
             scheduler.step_update(curr_epoch * total_iteration + iteration)
         end = time.time()
+        if iteration % 100 == 0 and my_rank == 0:
+            torch.save({
+                'epoch': curr_epoch,
+                'model': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                "total_iteration": total_iteration,
+                "iteration": iteration
+                },
+                osp.join("checkpoints", "model_{:03d}.ckpt".format(curr_epoch)))
 
     if tensorboard_logger is not None and my_rank == 0:
         for curr_tree_depth in range(1, max_tree_depth + 1):
@@ -578,6 +589,7 @@ def train(rank, cfg):
                 loadckpt = os.path.join(output_dir, saved_models[-1])
                 logger.info("Loading checkpoint from {}".format(loadckpt))
                 state_dict = torch.load(loadckpt, map_location=torch.device("cpu"))
+                #state_dict['epoch']=int(saved_models[-1].split('_')[-1].split('.')[0])
             else:
                 logger.info("No checkpoint found for auto_resume. Initializing model from scratch")
     else:
@@ -679,12 +691,15 @@ def train(rank, cfg):
         else:
             logger.info("Loading optimizer ...")
             optimizer.load_state_dict(state_dict['optimizer'])
-            if scheduler is not None:
+            if scheduler is not None and 'scheduler' in state_dict.keys():
                 logger.info("Loading scheduler ...")
                 scheduler.load_state_dict(state_dict['scheduler'])
             start_epoch = state_dict['epoch'] + 1 # state_dict['epoch'] is the epoch id of the model, from 0
             best_metric_name = cfg["train"]["val_metric"]
-            best_metric = state_dict[best_metric_name]
+            if 'best_metric_name' in state_dict.keys():
+                best_metric = state_dict[best_metric_name]
+            else:
+                best_metric = None
     else:
         start_epoch = 0
         best_metric_name = cfg["train"]["val_metric"]

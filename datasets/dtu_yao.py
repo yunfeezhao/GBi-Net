@@ -202,15 +202,16 @@ class MVSDataset(Dataset):
         for i, vid in enumerate(view_ids):
             # NOTE that the id in image file names is from 1 to 49 (not 0~48)
             img_filename = os.path.join(self.datapath,
-                                        'Rectified_raw/{}/rect_{:0>3}_{}_r5000.png'.format(scan, vid + 1, light_idx))
+                                        'Rectified/{}_train/rect_{:0>3}_{}_r5000.png'.format(scan, vid + 1, light_idx))
             mask_filename = os.path.join(self.datapath, 'Depths_raw/{}/depth_visual_{:0>4}.png'.format(scan, vid))
             depth_filename = os.path.join(self.datapath, 'Depths_raw/{}/depth_map_{:0>4}.pfm'.format(scan, vid))
             proj_mat_filename = os.path.join(self.datapath, 'Cameras/{:0>8}_cam.txt').format(vid)
 
             img = self.read_img(img_filename, color_mode=self.color_mode)
             ori_shape = img.shape
-            img = self.scale_img(img=img, scale=0.5, interpolation=self.img_interp) # 600, 800
-            img = self.crop_img(img=img, new_h=512, new_w=640) # 512, 640
+            ori_shape = (1200,1600,3)
+            # img = self.scale_img(img=img, scale=0.5, interpolation=self.img_interp) # 600, 800
+            # img = self.crop_img(img=img, new_h=512, new_w=640) # 512, 640
                             
             intrinsics, extrinsics, depth_min, depth_interval = self.read_cam_file(proj_mat_filename)
             intrinsics = self.scale_cam(intrinsics=intrinsics, scale=0.5) # 600, 800
@@ -286,7 +287,7 @@ class MVSDataset(Dataset):
                 "proj_matrices": proj_matrices,
                 "cams": cams,
                 "depths": depths,
-                "depth_values": depth_values,
+               # "depth_values": depth_values,
                 "depth_min_max": depth_min_max,
                 "binary_tree": {"tree": binary_tree, "depth": sample_depth},
                 "masks": masks}

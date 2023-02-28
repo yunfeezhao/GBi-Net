@@ -132,7 +132,15 @@ def filter_depth(scan_folder, pair_path, plyfilename, prob_threshold=0.8, num_co
     vertexs = []
     vertex_colors = []
 
-    pair_data = read_pair_file(pair_file)
+    #pair_data = read_pair_file(pair_file)
+    pair_data=[[0, [7,1]],
+                [1, [0,2]],
+                [2, [1,3]],
+                [3, [2,4]],
+                [4, [3,5]],
+                [5, [4,6]],
+                [6, [5,7]],
+                [7, [6,0]]]
     nviews = len(pair_data)
     # TODO: hardcode size
     # used_mask = [np.zeros([296, 400], dtype=np.bool) for _ in range(nviews)]
@@ -187,7 +195,7 @@ def filter_depth(scan_folder, pair_path, plyfilename, prob_threshold=0.8, num_co
         depth_est_averaged = (sum(all_srcview_depth_ests) + ref_depth_est) / (geo_mask_sum + 1)
         # at least 3 source views matched
         geo_mask = geo_mask_sum >= num_consistent
-        final_mask = np.logical_and(photo_mask, geo_mask)
+        final_mask = photo_mask#np.logical_and(photo_mask, geo_mask)
 
         os.makedirs(os.path.join(scan_folder, "mask"), exist_ok=True)
         save_mask(os.path.join(scan_folder, "mask/{:0>8}_photo.png".format(ref_view)), photo_mask)

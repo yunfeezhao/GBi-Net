@@ -1,5 +1,5 @@
 output_dir: "exps/test_dtu"
-true_gpu: "1"
+true_gpu: "3"
 gpu: [0]
 random_seed: 0
 auto_resume: True
