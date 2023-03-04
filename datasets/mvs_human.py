@@ -70,10 +70,10 @@ class MVSDataset(Dataset):
     def build_list(self):
         metas = []
         for peoplename in self.peoplenames:
-            with open(self.datapath+peoplename+"/index.txt") as f:
+            with open(self.datapath+peoplename+"/"+self.listfile) as f:
                 imgs = f.readlines()
                 imgs = [line.split('\n')[0] for line in imgs]
-            views = self.readview(self.datapath+peoplename+"/"+self.listfile)#'/data3/MVFR_DATASET/Res256/meta/6_4/three_views.txt'
+            views = self.readview(self.datapath+peoplename+"/mvs_views.txt")#'/data3/MVFR_DATASET/Res256/meta/6_4/three_views.txt'
             # lines
             for imgn in imgs :
                 for view in views:

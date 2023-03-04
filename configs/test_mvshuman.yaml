@@ -1,5 +1,5 @@
 output_dir: "exps/test_mvshuman"
-true_gpu: "0,1,2"
+true_gpu: "1"
 gpu: [0]
 random_seed: 0
 auto_resume: True
@@ -9,7 +9,7 @@ model_name: "GBiNet"
 test_func_name: "test_model_stage_profile"
 dataset: "mvs_human"
 max_depth: 8
-model_path: "checkpoints/dtu.ckpt"
+model_path: "checkpoints/model_008.ckpt"
 img_mean: [0.5, 0.5, 0.5]
 img_std: [0.5, 0.5, 0.5]
 
@@ -43,13 +43,13 @@ test:
   test_metric: "thres2mm_accu"
 
 data:
-  num_workers: 4
+  num_workers: 6
   test:
     root_dir: '/mnt/dataset/06Visg-Azure-kinect/dataset/newmvs_human/mvs_human_1024/'
     num_view: 3
     interval_scale: 0.8
     num_depth: 256
-    listfile:  'mvs_views.txt'
+    listfile:  'index_sample.txt'
     out_scale: 1.0
     self_norm: False
     color_mode: null
@@ -63,8 +63,8 @@ data:
     save_depths: [8]
     prob_depth: 6
 
-no_testing: True
-# no_fusion: True
+#no_testing: True
+#no_fusion: True
 
 fusion:
   name: "xy_filter_per"
@@ -75,9 +75,9 @@ fusion:
     para_tag: [0]
     output_dir: "exps/test_mvshuman/xy_filter"
     scan:
-      prob_threshold: [0.7]
-      num_consistent: [3]
-      img_dist_thresh: [0.25]
+      prob_threshold: [0.75]
+      num_consistent: [1]
+      img_dist_thresh: [5]
       depth_thresh: [0.01]
     pair_data: [[0, [7,1]],
                 [1, [0,2]],

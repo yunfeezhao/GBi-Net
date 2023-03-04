@@ -71,7 +71,7 @@ data:
     self_norm: False
     color_mode: null
     random_view: True
-    listfile:  'mvs_views.txt'
+    listfile:  'index.txt'
   val:
     root_dir: '/mnt/dataset/06Visg-Azure-kinect/dataset/newmvs_human/mvs_human_1024/'
     num_view: 3

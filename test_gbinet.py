@@ -35,6 +35,7 @@ from utils.xy_fusion import filter_depth
 from utils.collect_pointclouds import *
 
 import pandas as pd
+from tqdm import tqdm
 
 def test_model_stage(model,
                 loss_fn,
@@ -306,7 +307,7 @@ def test_model_stage_profile(model,
     max_stage_id = max(depth2stage.values())
     os.makedirs(output_dir, exist_ok=True)
     with torch.no_grad():
-        for iteration, sample in enumerate(data_loader):
+        for iteration, sample in tqdm(enumerate(data_loader)):
             torch.cuda.reset_peak_memory_stats()
             data_time = time.time() - end
             sample_cuda = tocuda(sample)
@@ -377,7 +378,6 @@ def test_model_stage_profile(model,
             ref_imgs = tensor2numpy(sample["ref_imgs"][str(stage_id)])
 
             for batch_idx in range(len(scan_names)):
-                continue
                 scan_name = scan_names[batch_idx]
                 scan_folder = osp.join(depth_output_dir, scan_name)
 
@@ -770,10 +770,14 @@ def main():
             if cfg["fusion"]["xy_filter_per"].get("nprocs", None) is None:
                 xy_filter_per(-1, cfg)
             else:
-                # with open(cfg["data"]["test"]["listfile"]) as f:
-                #     scans = f.readlines()
-                #     scans = [line.rstrip() for line in scans]
-                scans = ["zrr_0000000042","zrr_0000000504"]
+                if cfg["dataset"]=="mvs_human":
+                    with open(cfg["data"]["test"]["root_dir"]+"zrr/"+cfg["data"]["test"]["listfile"]) as f:
+                        scans = f.readlines()
+                        scans = ["zrr_"+line.rstrip() for line in scans]
+                else:  
+                    with open(cfg["data"]["test"]["listfile"]) as f:
+                        scans = f.readlines()
+                        scans = [line.rstrip() for line in scans]
                 cfg["fusion"]["xy_filter_per"]["scans"] = chunk_list(scans, cfg["fusion"]["xy_filter_per"]["nprocs"])
                 mp.spawn(xy_filter_per,
                     args=(cfg,),
