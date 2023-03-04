@@ -195,7 +195,7 @@ def filter_depth(scan_folder, pair_path, plyfilename, prob_threshold=0.8, num_co
         depth_est_averaged = (sum(all_srcview_depth_ests) + ref_depth_est) / (geo_mask_sum + 1)
         # at least 3 source views matched
         geo_mask = geo_mask_sum >= num_consistent
-        final_mask = np.logical_and(photo_mask, geo_mask)
+        final_mask = photo_mask#np.logical_and(photo_mask, geo_mask)
 
         os.makedirs(os.path.join(scan_folder, "mask"), exist_ok=True)
         save_mask(os.path.join(scan_folder, "mask/{:0>8}_photo.png".format(ref_view)), photo_mask)

@@ -307,7 +307,7 @@ def test_model_stage_profile(model,
     max_stage_id = max(depth2stage.values())
     os.makedirs(output_dir, exist_ok=True)
     with torch.no_grad():
-        for iteration, sample in tqdm(enumerate(data_loader)):
+        for iteration, sample in enumerate(data_loader):
             torch.cuda.reset_peak_memory_stats()
             data_time = time.time() - end
             sample_cuda = tocuda(sample)
