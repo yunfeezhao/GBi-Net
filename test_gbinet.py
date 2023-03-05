@@ -35,7 +35,6 @@ from utils.xy_fusion import filter_depth
 from utils.collect_pointclouds import *
 
 import pandas as pd
-from tqdm import tqdm
 
 def test_model_stage(model,
                 loss_fn,
@@ -378,6 +377,7 @@ def test_model_stage_profile(model,
             ref_imgs = tensor2numpy(sample["ref_imgs"][str(stage_id)])
 
             for batch_idx in range(len(scan_names)):
+                continue
                 scan_name = scan_names[batch_idx]
                 scan_folder = osp.join(depth_output_dir, scan_name)
 

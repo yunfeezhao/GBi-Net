@@ -1,5 +1,5 @@
-output_dir: "exps/test_mvshuman"
-true_gpu: "1"
+output_dir: "exps/test_mvshuman21"
+true_gpu: "0"
 gpu: [0]
 random_seed: 0
 auto_resume: True
@@ -9,7 +9,7 @@ model_name: "GBiNet"
 test_func_name: "test_model_stage_profile"
 dataset: "mvs_human"
 max_depth: 8
-model_path: "exps/train_mvshuman/model_022.ckpt"
+model_path: "exps/train_mvshuman/model_021.ckpt"
 img_mean: [0.5, 0.5, 0.5]
 img_std: [0.5, 0.5, 0.5]
 
@@ -38,7 +38,7 @@ model:
       "9": 3 # needed and invalid, just for checking
 
 test:
-  batch_size: 12
+  batch_size: 24
   log_period: 20
   test_metric: "thres2mm_accu"
 
@@ -49,7 +49,7 @@ data:
     num_view: 3
     interval_scale: 0.8
     num_depth: 256
-    listfile:  'index_sample.txt'
+    listfile:  'index.txt'
     out_scale: 1.0
     self_norm: False
     color_mode: null
@@ -64,7 +64,7 @@ data:
     prob_depth: 6
 
 #no_testing: True
-#no_fusion: True
+no_fusion: True
 
 fusion:
   name: "xy_filter_per"
@@ -73,7 +73,7 @@ fusion:
     global_pair: True
     para_num: 1
     para_tag: [0]
-    output_dir: "exps/test_mvshuman/xy_filter"
+    output_dir: "exps/22xy_filter"
     scan:
       prob_threshold: [0.75]
       num_consistent: [1]
